@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
-import { ViewState, Post, RankingUser, Challenge } from '../../types';
-import { FEED_DATA, IMAGES, RANKING_DATA } from '../../constants';
+import { ViewState, Post, RankingUser, Challenge } from '../types';
+import { FEED_DATA, IMAGES, RANKING_DATA } from '../constants';
 import { WorkoutData } from '../views/LogWorkout';
 
 interface AppContextType {

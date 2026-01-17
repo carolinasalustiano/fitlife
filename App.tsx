@@ -1,16 +1,16 @@
 import React from 'react';
-import Navigation from './fitlife/components/Navigation';
-import Feed from './fitlife/views/Feed';
-import Ranking from './fitlife/views/Ranking';
-import Dashboard from './fitlife/views/Dashboard';
-import LogWorkout from './fitlife/views/LogWorkout';
-import UserProfile from './fitlife/views/UserProfile';
-import Friends from './fitlife/views/Friends';
-import Challenges from './fitlife/views/Challenges';
-import Auth from './fitlife/views/Auth';
+import Navigation from './components/Navigation';
+import Feed from './views/Feed';
+import Ranking from './views/Ranking';
+import Dashboard from './views/Dashboard';
+import LogWorkout from './views/LogWorkout';
+import UserProfile from './views/UserProfile';
+import Friends from './views/Friends';
+import Challenges from './views/Challenges';
+import Auth from './views/Auth';
 import { ViewState } from './types';
-import { AppProvider, useApp } from './fitlife/context/AppContext';
-import Layout from './fitlife/components/Layout';
+import { AppProvider, useApp } from './context/AppContext';
+import Layout from './components/Layout';
 
 const AppContent = () => {
   const {
