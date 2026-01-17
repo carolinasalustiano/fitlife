@@ -11,6 +11,7 @@ import Auth from './views/Auth';
 import { ViewState } from './types';
 import { AppProvider, useApp } from './context/AppContext';
 import Layout from './components/Layout';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 const AppContent = () => {
   const {
@@ -229,6 +230,7 @@ function App() {
   return (
     <AppProvider>
       <AppContent />
+      <PWAInstallPrompt />
     </AppProvider>
   );
 }
