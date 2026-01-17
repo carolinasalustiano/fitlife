@@ -577,7 +577,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             let finalImageUrl = data.photo;
             if (data.photoFile) {
                 try {
-                    const fileExt = data.photoFile.name.split('.pop');
+                    const fileExt = data.photoFile.name.split('.').pop();
                     const fileName = `${Date.now()}.${fileExt}`;
                     const { error: uploadError } = await supabase.storage.from('workouts').upload(fileName, data.photoFile);
                     if (uploadError) throw uploadError;
@@ -595,14 +595,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
                     const { error } = await supabase.from('posts').insert({
                         user_id: user.id, activity: data.activity, duration: data.duration,
                         intensity: data.intensity, weight: data.weight, sets: data.sets,
-                        image_url: finalImageUrl, likes_count: 0
+                        image_url: finalImageUrl || null, likes_count: 0
                     });
                     if (error) throw error;
                     fetchPosts();
                     fetchRanking();
                     fetchProfile(user.id);
                 }
-            } catch (e) { console.error(e); alert('Erro save'); }
+            } catch (e: any) { console.error(e); alert(`Erro ao salvar treino: ${e.message}`); }
         }
         setIsLogOpen(false);
         if (!editingPost) {
