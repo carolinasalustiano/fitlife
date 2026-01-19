@@ -123,14 +123,14 @@ const PWAInstallPrompt = () => {
                 {isIOS ? (
                     <div className="flex flex-col gap-3 mt-2">
                         <div className="text-xs text-red-500/80 dark:text-red-400/80 font-medium bg-red-50 dark:bg-red-900/10 px-3 py-2 rounded-lg mb-1">
-                            A Apple não permite instalação automática. Siga os passos abaixo:
+                            A Apple não permite instalação automática. Siga os passos:
                         </div>
                         <div className="flex items-center gap-3 bg-stone-50 dark:bg-white/5 p-3 rounded-xl">
                             <span className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 flex items-center justify-center shrink-0">
                                 <span className="material-symbols-rounded text-lg">ios_share</span>
                             </span>
                             <div className="text-left text-sm text-stone-700 dark:text-stone-300">
-                                1. Toque no botão <span className="font-semibold">Compartilhar</span>
+                                1. Procure o botão <span className="font-bold">Compartilhar</span> na barra do navegador (topo no iPad, base no iPhone).
                             </div>
                         </div>
                         <div className="flex items-center gap-3 bg-stone-50 dark:bg-white/5 p-3 rounded-xl">
@@ -138,7 +138,7 @@ const PWAInstallPrompt = () => {
                                 <span className="material-symbols-rounded text-lg">add_box</span>
                             </span>
                             <div className="text-left text-sm text-stone-700 dark:text-stone-300">
-                                2. Selecione <span className="font-semibold">Adicionar à Tela de Início</span>
+                                2. No menu que abrir, role para baixo até achar e clicar em <span className="font-bold">Adicionar à Tela de Início</span>.
                             </div>
                         </div>
                     </div>
