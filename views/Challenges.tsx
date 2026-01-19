@@ -168,9 +168,9 @@ const Challenges: React.FC<ChallengesProps> = ({
                                     {/* Header with Status and Menu */}
                                     <div className="flex justify-between items-start mb-2 relative z-20">
                                         <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide
-                            ${challenge.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}
+                            ${challenge.status === 'active' ? 'bg-green-100 text-green-700' : challenge.status === 'completed' ? 'bg-gray-200 text-gray-600' : 'bg-orange-100 text-orange-700'}
                          `}>
-                                            {challenge.status === 'active' ? 'Em andamento' : 'Em breve'}
+                                            {challenge.status === 'active' ? 'Em andamento' : challenge.status === 'completed' ? 'Concluído' : 'Em breve'}
                                         </span>
 
                                         {isCreator && (
