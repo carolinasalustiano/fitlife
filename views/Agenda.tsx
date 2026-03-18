@@ -16,11 +16,11 @@ const TRAINERS = [
   },
   {
     id: 2,
-    name: "Rafael Cardoso",
+    name: "Gabriel Cardoso",
     specialty: "Crossfit & LPO",
     price: "R$ 180/sessão",
-    image: "https://i.pravatar.cc/150?u=rafael",
-    link: "https://calendly.com/carolsalustiano-prod/30min" // fallback
+    image: "https://i.pravatar.cc/150?u=gabriel",
+    link: "https://calendar.app.google/CboHTAmBRfDjpaSD6"
   },
   {
     id: 3,
