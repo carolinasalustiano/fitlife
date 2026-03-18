@@ -8,6 +8,7 @@ import UserProfile from './views/UserProfile';
 import Friends from './views/Friends';
 import Challenges from './views/Challenges';
 import Auth from './views/Auth';
+import Agenda from './views/Agenda';
 import { ViewState } from './types';
 import { AppProvider, useApp } from './context/AppContext';
 import Layout from './components/Layout';
@@ -178,6 +179,8 @@ const AppContent = () => {
           currentUserId={currentUser.id}
           posts={posts}
         />;
+      case ViewState.AGENDA:
+        return <Agenda onBack={goBack} />;
       default:
         // Default to Feed
         return <Feed

@@ -31,6 +31,11 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, onOpen
           <span className="material-symbols-rounded text-white text-3xl">add</span>
         </button>
 
+        <button className={getIconClass(ViewState.AGENDA)} onClick={() => onNavigate(ViewState.AGENDA)}>
+          <span className="material-symbols-rounded">calendar_month</span>
+          <span className="text-[10px] font-bold">Agenda</span>
+        </button>
+
         <button className={getIconClass(ViewState.DASHBOARD)} onClick={() => onNavigate(ViewState.DASHBOARD)}>
           <span className="material-symbols-rounded">analytics</span>
           <span className="text-[10px] font-bold">Painel</span>

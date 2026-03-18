@@ -6,7 +6,8 @@ export enum ViewState {
   DASHBOARD = 'DASHBOARD',
   USER_PROFILE = 'USER_PROFILE',
   FRIENDS = 'FRIENDS',
-  CHALLENGES = 'CHALLENGES'
+  CHALLENGES = 'CHALLENGES',
+  AGENDA = 'AGENDA'
 }
 
 export type RankingLevel = 'Fácil' | 'Intermediário' | 'Avançado';
