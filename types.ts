@@ -7,7 +7,8 @@ export enum ViewState {
   USER_PROFILE = 'USER_PROFILE',
   FRIENDS = 'FRIENDS',
   CHALLENGES = 'CHALLENGES',
-  AGENDA = 'AGENDA'
+  AGENDA = 'AGENDA',
+  VIDEO_CALL = 'VIDEO_CALL'
 }
 
 export type RankingLevel = 'Fácil' | 'Intermediário' | 'Avançado';
@@ -20,6 +21,7 @@ export interface User {
   isCurrentUser?: boolean;
   currentWeight?: number;
   initialWeight?: number;
+  isProfessional?: boolean;
 }
 
 export interface Comment {

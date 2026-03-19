@@ -19,9 +19,10 @@ interface UserProfileProps {
     onAddFriend?: (userId: string) => void;
     onAcceptFriend?: (userId: string) => void;
     onRemoveFriend?: (userId: string) => void;
-    friendsIds?: string[];
     incomingRequests?: string[];
     outgoingRequests?: string[];
+    isProfessionalMode?: boolean;
+    onToggleProfessional?: () => void;
 }
 
 const UserProfile: React.FC<UserProfileProps> = ({
@@ -41,7 +42,9 @@ const UserProfile: React.FC<UserProfileProps> = ({
     onRemoveFriend,
     friendsIds,
     incomingRequests,
-    outgoingRequests
+    outgoingRequests,
+    isProfessionalMode,
+    onToggleProfessional
 }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
@@ -153,6 +156,23 @@ const UserProfile: React.FC<UserProfileProps> = ({
                             <p className="text-[10px] uppercase font-bold text-white/50">Fotos</p>
                         </div>
                     </div>
+
+                    {/* Professional Mode Toggle */}
+                    {user.isCurrentUser && onToggleProfessional && (
+                        <div className="mt-6 w-full max-w-[250px]">
+                            <button
+                                onClick={onToggleProfessional}
+                                className={`w-full py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${
+                                    isProfessionalMode 
+                                    ? 'bg-white text-maroon hover:bg-gray-100' 
+                                    : 'bg-maroon text-white hover:bg-red-900 border border-white/20'
+                                }`}
+                            >
+                                <span className="material-symbols-outlined text-sm">workspace_premium</span>
+                                {isProfessionalMode ? 'Desativar Modo Profissional' : 'Ativar Modo Profissional'}
+                            </button>
+                        </div>
+                    )}
 
                     {/* Friend Action Button */}
                     {!user.isCurrentUser && (

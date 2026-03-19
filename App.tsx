@@ -9,6 +9,8 @@ import Friends from './views/Friends';
 import Challenges from './views/Challenges';
 import Auth from './views/Auth';
 import Agenda from './views/Agenda';
+import ProfessionalAgenda from './views/ProfessionalAgenda';
+import VideoCall from './views/VideoCall';
 import { ViewState } from './types';
 import { AppProvider, useApp } from './context/AppContext';
 import Layout from './components/Layout';
@@ -23,7 +25,9 @@ const AppContent = () => {
     createChallenge, updateChallenge, leaveChallenge, deleteChallenge,
     selectUser, openMyProfile, updateWeight, updateInitialWeight, updateName, logout, addFriend,
     acceptFriend, removeFriend,
-    isNotificationsEnabled, toggleNotifications, goBack
+    isNotificationsEnabled, toggleNotifications, goBack,
+    activeVideoRoom, joinVideoCall, leaveVideoCall,
+    isProfessionalMode, toggleProfessionalMode
   } = useApp();
 
   const {
@@ -138,6 +142,8 @@ const AppContent = () => {
             friendsIds={friendsIds}
             incomingRequests={userWrapper.incomingRequests}
             outgoingRequests={userWrapper.outgoingRequests}
+            isProfessionalMode={isProfessionalMode}
+            onToggleProfessional={toggleProfessionalMode}
           />
         ) : <Ranking data={ranking} onUserClick={selectUser} onBack={goBack} />;
       case ViewState.DASHBOARD:
@@ -180,7 +186,12 @@ const AppContent = () => {
           posts={posts}
         />;
       case ViewState.AGENDA:
-        return <Agenda onBack={goBack} />;
+        if (isProfessionalMode) {
+          return <ProfessionalAgenda user={currentUser} onJoinVideoCall={joinVideoCall} onBack={goBack} />;
+        }
+        return <Agenda onBack={goBack} onJoinVideoCall={joinVideoCall} />;
+      case ViewState.VIDEO_CALL:
+        return <VideoCall room={activeVideoRoom || 'FitLife-Consulta'} onLeave={leaveVideoCall} />;
       default:
         // Default to Feed
         return <Feed

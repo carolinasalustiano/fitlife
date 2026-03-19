@@ -3,6 +3,7 @@ import { IMAGES } from '@/constants';
 
 interface AgendaProps {
   onBack?: () => void;
+  onJoinVideoCall?: (room: string) => void;
 }
 
 const TRAINERS = [
@@ -32,7 +33,7 @@ const TRAINERS = [
   }
 ];
 
-const Agenda: React.FC<AgendaProps> = ({ onBack }) => {
+const Agenda: React.FC<AgendaProps> = ({ onBack, onJoinVideoCall }) => {
   return (
     <div className="min-h-screen pb-32 bg-background-light dark:bg-background-dark">
       {/* Header */}
@@ -60,15 +61,24 @@ const Agenda: React.FC<AgendaProps> = ({ onBack }) => {
                 <p className="text-xs font-bold text-maroon uppercase tracking-wider mt-0.5">{trainer.specialty}</p>
                 <p className="text-sm font-bold text-primary/60 dark:text-white/60 mt-2">{trainer.price}</p>
               </div>
-              <a
-                href={trainer.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-primary text-white p-3 rounded-2xl flex items-center justify-center shadow-md shadow-primary/30 hover:bg-primary-dark transition-colors"
-                title="Agendar"
-              >
-                <span className="material-symbols-rounded">calendar_month</span>
-              </a>
+              <div className="flex gap-2">
+                <a
+                  href={trainer.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-primary text-white p-3 rounded-2xl flex items-center justify-center shadow-md shadow-primary/30 hover:bg-primary-dark transition-colors"
+                  title="Agendar Consulta (Calendly)"
+                >
+                  <span className="material-symbols-rounded">calendar_month</span>
+                </a>
+                <button
+                  onClick={() => onJoinVideoCall && onJoinVideoCall(`FitLife-Consulta-${trainer.name.replace(/\s+/g, '-')}`)}
+                  className="bg-green-500 text-white p-3 rounded-2xl flex items-center justify-center shadow-md shadow-green-500/30 hover:bg-green-600 transition-colors"
+                  title="Entrar na Chamada de Vídeo (Jitsi)"
+                >
+                  <span className="material-symbols-rounded">video_camera_front</span>
+                </button>
+              </div>
             </div>
           ))}
         </div>

@@ -54,6 +54,11 @@ interface AppContextType {
     currentUserProfile: RankingUser | null;
     isNotificationsEnabled: boolean;
     toggleNotifications: () => void;
+    activeVideoRoom: string | null;
+    joinVideoCall: (room: string) => void;
+    leaveVideoCall: () => void;
+    isProfessionalMode: boolean;
+    toggleProfessionalMode: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -63,11 +68,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [currentUserProfile, setCurrentUserProfile] = useState<RankingUser | null>(null);
     const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
+    const [isProfessionalMode, setIsProfessionalMode] = useState(false);
     const [currentView, setCurrentView] = useState<ViewState>(ViewState.FEED);
     const [previousView, setPreviousView] = useState<ViewState | null>(null);
     const [isLogOpen, setIsLogOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<RankingUser | null>(null);
     const [editingPost, setEditingPost] = useState<Post | null>(null);
+    const [activeVideoRoom, setActiveVideoRoom] = useState<string | null>(null);
 
     const [posts, setPosts] = useState<Post[]>([]);
     const [ranking, setRanking] = useState<RankingUser[]>([]);
@@ -689,6 +696,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const openMyProfile = () => { setSelectedUser(getCurrentUser()); setPreviousView(currentView); setCurrentView(ViewState.USER_PROFILE); window.scrollTo({ top: 0, behavior: 'smooth' }); };
     const goBack = () => { if (previousView) setCurrentView(previousView); else setCurrentView(ViewState.FEED); };
 
+    const joinVideoCall = (room: string) => {
+        setActiveVideoRoom(room);
+        navigate(ViewState.VIDEO_CALL);
+    };
+
+    const leaveVideoCall = () => {
+        setActiveVideoRoom(null);
+        goBack();
+    };
+
+    const toggleProfessionalMode = () => {
+        setIsProfessionalMode(prev => !prev);
+    };
+
     const addFriend = async (id: string) => {
         if (!currentUserProfile) return;
         if (!friendRequests.sent.includes(id) && !friendsIds.includes(id)) {
@@ -951,7 +972,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             likePost, commentPost, createChallenge, updateChallenge, leaveChallenge, deleteChallenge,
             selectUser, openMyProfile, updateWeight, updateInitialWeight, addFriend,
             acceptFriend, removeFriend,
-            currentUserProfile, isNotificationsEnabled, toggleNotifications
+            currentUserProfile, isNotificationsEnabled, toggleNotifications,
+            activeVideoRoom, joinVideoCall, leaveVideoCall,
+            isProfessionalMode, toggleProfessionalMode
         }}>
             {children}
         </AppContext.Provider>
