@@ -1,0 +1,2 @@
+﻿components/ErrorBoundary.tsx(48,18): error TS2339: Property 'props' does not exist on type 'ErrorBoundary'.
+context/AppContext.tsx(571,23): error TS2448: Block-scoped variable 'navigate' used before its declaration.

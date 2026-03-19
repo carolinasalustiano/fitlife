@@ -1,5 +1,6 @@
 import React from 'react';
-import { RankingUser } from '@/types';
+import { RankingUser, Appointment } from '@/types';
+import { useApp } from '@/context/AppContext';
 
 interface ProfessionalAgendaProps {
   user: RankingUser;
@@ -7,14 +8,22 @@ interface ProfessionalAgendaProps {
   onBack?: () => void;
 }
 
-const MOCK_APPOINTMENTS = [
-  { id: 1, student: "João Silva", time: "14:00", status: "Confirmado" },
-  { id: 2, student: "Maria Gabriela", time: "15:30", status: "Pendente" },
-  { id: 3, student: "Carlos Eduardo", time: "18:00", status: "Confirmado" },
-];
+
 
 const ProfessionalAgenda: React.FC<ProfessionalAgendaProps> = ({ user, onJoinVideoCall, onBack }) => {
   const roomName = `FitLife-Consulta-${user.name.replace(/\s+/g, '-')}`;
+  const { appointments } = useApp();
+
+  const myAppointments = appointments
+    .filter(a => a.trainer.id === user.id || a.trainer.name === user.name)
+    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+
+  const now = new Date();
+  const activeAppointment = myAppointments.find(a => {
+    const aptTime = new Date(a.dateTime);
+    const diffMins = (aptTime.getTime() - now.getTime()) / 60000;
+    return diffMins <= 10 && diffMins >= -60; // Has appointment starting in 10 mins or ongoing
+  });
 
   return (
     <div className="min-h-screen pb-32 bg-background-light dark:bg-background-dark">
@@ -44,39 +53,51 @@ const ProfessionalAgenda: React.FC<ProfessionalAgendaProps> = ({ user, onJoinVid
           
           <button
             onClick={() => onJoinVideoCall(roomName)}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-green-500/30"
+            className={`w-full font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${
+              activeAppointment 
+                ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-blue-500/30 animate-pulse'
+                : 'bg-green-500 hover:bg-green-600 text-white shadow-green-500/30'
+            }`}
           >
             <span className="material-symbols-rounded">meeting_room</span>
-            Abrir Minha Sala Agora
+            {activeAppointment ? `Entrar (Consulta com ${activeAppointment.student.name})` : 'Abrir Minha Sala Agora'}
           </button>
         </section>
 
         {/* Appointments */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-primary dark:text-white text-lg">Consultas de Hoje</h3>
-            <span className="bg-maroon/10 text-maroon text-xs font-bold px-2 py-1 rounded-lg">3 Agendamentos</span>
+            <h3 className="font-bold text-primary dark:text-white text-lg">Suas Consultas Agendadas</h3>
+            <span className="bg-maroon/10 text-maroon text-xs font-bold px-2 py-1 rounded-lg">
+              {myAppointments.length} {myAppointments.length === 1 ? 'Agendamento' : 'Agendamentos'}
+            </span>
           </div>
 
           <div className="space-y-3">
-            {MOCK_APPOINTMENTS.map((apt) => (
-              <div key={apt.id} className="bg-white dark:bg-white/5 p-4 rounded-2xl shadow-sm border border-black/5 dark:border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary dark:text-tan font-bold">
-                    {apt.student.charAt(0)}
+            {myAppointments.length === 0 ? (
+              <p className="text-center text-sm font-bold text-stone-400 py-8 bg-white/50 dark:bg-white/5 rounded-2xl border border-dashed border-stone-200 dark:border-white/10">
+                Nenhuma consulta agendada no momento.
+              </p>
+            ) : (
+              myAppointments.map((apt) => (
+                <div key={apt.id} className="bg-white dark:bg-white/5 p-4 rounded-2xl shadow-sm border border-black/5 dark:border-white/10 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <img src={apt.student.avatar} alt={apt.student.name} className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center object-cover" />
+                    <div>
+                      <p className="font-bold text-primary dark:text-white text-md">{apt.student.name}</p>
+                      <p className="text-xs font-bold text-maroon mt-0.5">
+                        {new Date(apt.dateTime).toLocaleDateString()} às {new Date(apt.dateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </p>
+                    </div>
                   </div>
                   <div>
-                    <p className="font-bold text-primary dark:text-white text-md">{apt.student}</p>
-                    <p className="text-xs font-bold text-maroon mt-0.5">{apt.time}</p>
+                    <span className="text-[10px] font-bold uppercase px-2 py-1 rounded-md bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                      Confirmado
+                    </span>
                   </div>
                 </div>
-                <div>
-                  <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md ${apt.status === 'Confirmado' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'}`}>
-                    {apt.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </section>
       </main>

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
-import { ViewState, Post, RankingUser, Challenge } from '../types';
+import { ViewState, Post, RankingUser, Challenge, Appointment } from '../types';
 import { FEED_DATA, IMAGES, RANKING_DATA } from '../constants';
 import { WorkoutData } from '../views/LogWorkout';
 
@@ -12,6 +12,7 @@ interface AppContextType {
     posts: Post[];
     ranking: RankingUser[];
     challenges: Challenge[];
+    appointments: Appointment[];
     userWrapper: {
         streak: number;
         weight: number;
@@ -44,6 +45,7 @@ interface AppContextType {
     updateChallenge: (challenge: Challenge) => void;
     deleteChallenge: (id: string) => void;
     leaveChallenge: (id: string) => void;
+    scheduleAppointment: (trainer: RankingUser, dateTime: string) => void;
     selectUser: (user: RankingUser) => void;
     openMyProfile: () => void;
     updateWeight: (newWeight: number) => void;
@@ -81,6 +83,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const [friendsIds, setFriendsIds] = useState<string[]>([]);
     const [friendRequests, setFriendRequests] = useState<{ sent: string[], received: string[] }>({ sent: [], received: [] });
     const [challenges, setChallenges] = useState<Challenge[]>([]);
+    
+    // Mock initial appointments for UI demonstration
+    const [appointments, setAppointments] = useState<Appointment[]>([
+        {
+            id: 'mock-1',
+            trainer: { id: 'prof-1', name: 'Rafael Cardoso', avatar: 'https://i.pravatar.cc/150?u=rafael', isProfessional: true } as RankingUser,
+            student: { id: 'mock-student', name: 'Você', avatar: IMAGES.currentUser } as RankingUser,
+            dateTime: new Date(Date.now() + 6 * 60000).toISOString(), // 6 mins from now
+            status: 'scheduled'
+        }
+    ]);
 
     const previousRank = React.useRef<number | null>(null);
 
@@ -467,6 +480,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
+    // Navigation & Views
+    const navigate = (view: ViewState) => {
+        if (view === currentView) return;
+        setPreviousView(currentView);
+        setCurrentView(view);
+    };
+
     // 4. EFFECTS
     useEffect(() => {
 
@@ -516,6 +536,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
         previousRank.current = currentRank;
     }, [ranking, isNotificationsEnabled]);
+
+    // Appointment Notification Polling
+    useEffect(() => {
+        // Runs every minute to check if any appointment is within 5 minutes or starting right now
+        const interval = setInterval(() => {
+            const now = new Date();
+            appointments.forEach(apt => {
+                if (apt.status === 'scheduled') {
+                    const aptTime = new Date(apt.dateTime);
+                    const diffMs = aptTime.getTime() - now.getTime();
+                    const diffMins = Math.floor(diffMs / 60000);
+                    
+                    // Notify exactly 5 minutes before, or if it's strictly the same minute (0)
+                    if (diffMins === 5 || diffMins === 0) {
+                        const notifKey = `notified_${apt.id}_${diffMins}`;
+                        if (!sessionStorage.getItem(notifKey)) {
+                            sessionStorage.setItem(notifKey, 'true');
+                            
+                            const title = 'Sessão Começando!';
+                            const body = `Sua consulta com ${apt.trainer.name} começa em ${diffMins === 0 ? 'agora' : diffMins + ' minutos'}. Clique para entrar!`;
+                            
+                            if (Notification.permission === 'granted') {
+                                const n = new Notification(title, { body, icon: apt.trainer.avatar });
+                                n.onclick = () => {
+                                    window.focus();
+                                    navigate(ViewState.AGENDA);
+                                    n.close();
+                                };
+                            } else if (isNotificationsEnabled) {
+                                // Fallback alert if permissions are weird but notifications are toggled ON in app
+                                alert(`${title}\n\n${body}`);
+                            }
+                        }
+                    }
+                }
+            });
+        }, 60000);
+
+        return () => clearInterval(interval);
+    }, [appointments, navigate, isNotificationsEnabled]);
 
     // 5. ACTIONS
     const toggleNotifications = () => {
@@ -683,13 +743,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             console.error('Error commenting:', error);
             alert('Erro ao enviar comentário.');
         }
-    };
-
-    // Navigation & Views
-    const navigate = (view: ViewState) => {
-        if (view === currentView) return;
-        setPreviousView(currentView);
-        setCurrentView(view);
     };
 
     const selectUser = (user: RankingUser) => { setSelectedUser(user); setPreviousView(currentView); setCurrentView(ViewState.USER_PROFILE); window.scrollTo({ top: 0, behavior: 'smooth' }); };
@@ -930,6 +983,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
     };
 
+    const scheduleAppointment = (trainer: RankingUser, dateTime: string) => {
+        const newAppt: Appointment = {
+            id: Date.now().toString(),
+            trainer: trainer,
+            student: getCurrentUser(),
+            dateTime,
+            status: 'scheduled'
+        };
+        setAppointments(prev => [...prev, newAppt]);
+        alert(`Consulta agendada com ${trainer.name} para ${new Date(dateTime).toLocaleString()}`);
+        navigate(ViewState.AGENDA);
+    };
+
     const updateWeight = async (w: number) => {
         if (!currentUserProfile) return;
         try {
@@ -963,13 +1029,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     return (
         <AppContext.Provider value={{
-            isAuthenticated, currentView, previousView, posts, ranking, challenges,
+            isAuthenticated, currentView, previousView, posts, ranking, challenges, appointments,
             userWrapper,
             login, logout, navigate, goBack,
             openLog: () => { setEditingPost(null); setIsLogOpen(true); },
             closeLog: () => { setIsLogOpen(false); setEditingPost(null); },
             updateName, saveWorkout, deletePost, editPost: editPostAction,
-            likePost, commentPost, createChallenge, updateChallenge, leaveChallenge, deleteChallenge,
+            likePost, commentPost, createChallenge, updateChallenge, leaveChallenge, deleteChallenge, scheduleAppointment,
             selectUser, openMyProfile, updateWeight, updateInitialWeight, addFriend,
             acceptFriend, removeFriend,
             currentUserProfile, isNotificationsEnabled, toggleNotifications,

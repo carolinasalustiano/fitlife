@@ -81,3 +81,11 @@ export interface Challenge {
   status: 'active' | 'upcoming' | 'completed';
   description?: string;
 }
+
+export interface Appointment {
+  id: string;
+  trainer: User;
+  student: User;
+  dateTime: string; // ISO String
+  status: 'scheduled' | 'completed' | 'cancelled';
+}
