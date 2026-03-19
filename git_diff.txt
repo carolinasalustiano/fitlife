@@ -1,0 +1,414 @@
+﻿commit f9802131ac5e18a25b6c6a1ca63e0fbf818980b1
+Author: carolinasalustiano <carolsalustiano.cs@gmail.com>
+Date:   Thu Mar 19 12:21:10 2026 -0300
+
+    feat: Implement `AppContext` for centralized state management, introduce professional mode, and add video call functionality with new views.
+
+diff --git a/App.tsx b/App.tsx
+index 8240cb4..6090e95 100644
+--- a/App.tsx
++++ b/App.tsx
+@@ -9,6 +9,8 @@ import Friends from './views/Friends';
+ import Challenges from './views/Challenges';
+ import Auth from './views/Auth';
+ import Agenda from './views/Agenda';
++import ProfessionalAgenda from './views/ProfessionalAgenda';
++import VideoCall from './views/VideoCall';
+ import { ViewState } from './types';
+ import { AppProvider, useApp } from './context/AppContext';
+ import Layout from './components/Layout';
+@@ -23,7 +25,9 @@ const AppContent = () => {
+     createChallenge, updateChallenge, leaveChallenge, deleteChallenge,
+     selectUser, openMyProfile, updateWeight, updateInitialWeight, updateName, logout, addFriend,
+     acceptFriend, removeFriend,
+-    isNotificationsEnabled, toggleNotifications, goBack
++    isNotificationsEnabled, toggleNotifications, goBack,
++    activeVideoRoom, joinVideoCall, leaveVideoCall,
++    isProfessionalMode, toggleProfessionalMode
+   } = useApp();
+ 
+   const {
+@@ -138,6 +142,8 @@ const AppContent = () => {
+             friendsIds={friendsIds}
+             incomingRequests={userWrapper.incomingRequests}
+             outgoingRequests={userWrapper.outgoingRequests}
++            isProfessionalMode={isProfessionalMode}
++            onToggleProfessional={toggleProfessionalMode}
+           />
+         ) : <Ranking data={ranking} onUserClick={selectUser} onBack={goBack} />;
+       case ViewState.DASHBOARD:
+@@ -180,7 +186,12 @@ const AppContent = () => {
+           posts={posts}
+         />;
+       case ViewState.AGENDA:
+-        return <Agenda onBack={goBack} />;
++        if (isProfessionalMode) {
++          return <ProfessionalAgenda user={currentUser} onJoinVideoCall={joinVideoCall} onBack={goBack} />;
++        }
++        return <Agenda onBack={goBack} onJoinVideoCall={joinVideoCall} />;
++      case ViewState.VIDEO_CALL:
++        return <VideoCall room={activeVideoRoom || 'FitLife-Consulta'} onLeave={leaveVideoCall} />;
+       default:
+         // Default to Feed
+         return <Feed
+diff --git a/context/AppContext.tsx b/context/AppContext.tsx
+index e03035e..4f5ac00 100644
+--- a/context/AppContext.tsx
++++ b/context/AppContext.tsx
+@@ -54,6 +54,11 @@ interface AppContextType {
+     currentUserProfile: RankingUser | null;
+     isNotificationsEnabled: boolean;
+     toggleNotifications: () => void;
++    activeVideoRoom: string | null;
++    joinVideoCall: (room: string) => void;
++    leaveVideoCall: () => void;
++    isProfessionalMode: boolean;
++    toggleProfessionalMode: () => void;
+ }
+ 
+ const AppContext = createContext<AppContextType | undefined>(undefined);
+@@ -63,11 +68,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
+     const [isAuthenticated, setIsAuthenticated] = useState(false);
+     const [currentUserProfile, setCurrentUserProfile] = useState<RankingUser | null>(null);
+     const [isNotificationsEnabled, setIsNotificationsEnabled] = useState(false);
++    const [isProfessionalMode, setIsProfessionalMode] = useState(false);
+     const [currentView, setCurrentView] = useState<ViewState>(ViewState.FEED);
+     const [previousView, setPreviousView] = useState<ViewState | null>(null);
+     const [isLogOpen, setIsLogOpen] = useState(false);
+     const [selectedUser, setSelectedUser] = useState<RankingUser | null>(null);
+     const [editingPost, setEditingPost] = useState<Post | null>(null);
++    const [activeVideoRoom, setActiveVideoRoom] = useState<string | null>(null);
+ 
+     const [posts, setPosts] = useState<Post[]>([]);
+     const [ranking, setRanking] = useState<RankingUser[]>([]);
+@@ -689,6 +696,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
+     const openMyProfile = () => { setSelectedUser(getCurrentUser()); setPreviousView(currentView); setCurrentView(ViewState.USER_PROFILE); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+     const goBack = () => { if (previousView) setCurrentView(previousView); else setCurrentView(ViewState.FEED); };
+ 
++    const joinVideoCall = (room: string) => {
++        setActiveVideoRoom(room);
++        navigate(ViewState.VIDEO_CALL);
++    };
++
++    const leaveVideoCall = () => {
++        setActiveVideoRoom(null);
++        goBack();
++    };
++
++    const toggleProfessionalMode = () => {
++        setIsProfessionalMode(prev => !prev);
++    };
++
+     const addFriend = async (id: string) => {
+         if (!currentUserProfile) return;
+         if (!friendRequests.sent.includes(id) && !friendsIds.includes(id)) {
+@@ -951,7 +972,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
+             likePost, commentPost, createChallenge, updateChallenge, leaveChallenge, deleteChallenge,
+             selectUser, openMyProfile, updateWeight, updateInitialWeight, addFriend,
+             acceptFriend, removeFriend,
+-            currentUserProfile, isNotificationsEnabled, toggleNotifications
++            currentUserProfile, isNotificationsEnabled, toggleNotifications,
++            activeVideoRoom, joinVideoCall, leaveVideoCall,
++            isProfessionalMode, toggleProfessionalMode
+         }}>
+             {children}
+         </AppContext.Provider>
+diff --git a/types.ts b/types.ts
+index 54c5ad2..3a50c7f 100644
+--- a/types.ts
++++ b/types.ts
+@@ -7,7 +7,8 @@ export enum ViewState {
+   USER_PROFILE = 'USER_PROFILE',
+   FRIENDS = 'FRIENDS',
+   CHALLENGES = 'CHALLENGES',
+-  AGENDA = 'AGENDA'
++  AGENDA = 'AGENDA',
++  VIDEO_CALL = 'VIDEO_CALL'
+ }
+ 
+ export type RankingLevel = 'F├ícil' | 'Intermedi├írio' | 'Avan├ºado';
+@@ -20,6 +21,7 @@ export interface User {
+   isCurrentUser?: boolean;
+   currentWeight?: number;
+   initialWeight?: number;
++  isProfessional?: boolean;
+ }
+ 
+ export interface Comment {
+diff --git a/views/Agenda.tsx b/views/Agenda.tsx
+index c2b06e9..f749f97 100644
+--- a/views/Agenda.tsx
++++ b/views/Agenda.tsx
+@@ -3,6 +3,7 @@ import { IMAGES } from '@/constants';
+ 
+ interface AgendaProps {
+   onBack?: () => void;
++  onJoinVideoCall?: (room: string) => void;
+ }
+ 
+ const TRAINERS = [
+@@ -32,7 +33,7 @@ const TRAINERS = [
+   }
+ ];
+ 
+-const Agenda: React.FC<AgendaProps> = ({ onBack }) => {
++const Agenda: React.FC<AgendaProps> = ({ onBack, onJoinVideoCall }) => {
+   return (
+     <div className="min-h-screen pb-32 bg-background-light dark:bg-background-dark">
+       {/* Header */}
+@@ -60,15 +61,24 @@ const Agenda: React.FC<AgendaProps> = ({ onBack }) => {
+                 <p className="text-xs font-bold text-maroon uppercase tracking-wider mt-0.5">{trainer.specialty}</p>
+                 <p className="text-sm font-bold text-primary/60 dark:text-white/60 mt-2">{trainer.price}</p>
+               </div>
+-              <a
+-                href={trainer.link}
+-                target="_blank"
+-                rel="noopener noreferrer"
+-                className="bg-primary text-white p-3 rounded-2xl flex items-center justify-center shadow-md shadow-primary/30 hover:bg-primary-dark transition-colors"
+-                title="Agendar"
+-              >
+-                <span className="material-symbols-rounded">calendar_month</span>
+-              </a>
++              <div className="flex gap-2">
++                <a
++                  href={trainer.link}
++                  target="_blank"
++                  rel="noopener noreferrer"
++                  className="bg-primary text-white p-3 rounded-2xl flex items-center justify-center shadow-md shadow-primary/30 hover:bg-primary-dark transition-colors"
++                  title="Agendar Consulta (Calendly)"
++                >
++                  <span className="material-symbols-rounded">calendar_month</span>
++                </a>
++                <button
++                  onClick={() => onJoinVideoCall && onJoinVideoCall(`FitLife-Consulta-${trainer.name.replace(/\s+/g, '-')}`)}
++                  className="bg-green-500 text-white p-3 rounded-2xl flex items-center justify-center shadow-md shadow-green-500/30 hover:bg-green-600 transition-colors"
++                  title="Entrar na Chamada de V├¡deo (Jitsi)"
++                >
++                  <span className="material-symbols-rounded">video_camera_front</span>
++                </button>
++              </div>
+             </div>
+           ))}
+         </div>
+diff --git a/views/ProfessionalAgenda.tsx b/views/ProfessionalAgenda.tsx
+new file mode 100644
+index 0000000..e484adc
+--- /dev/null
++++ b/views/ProfessionalAgenda.tsx
+@@ -0,0 +1,87 @@
++import React from 'react';
++import { RankingUser } from '@/types';
++
++interface ProfessionalAgendaProps {
++  user: RankingUser;
++  onJoinVideoCall: (room: string) => void;
++  onBack?: () => void;
++}
++
++const MOCK_APPOINTMENTS = [
++  { id: 1, student: "Jo├úo Silva", time: "14:00", status: "Confirmado" },
++  { id: 2, student: "Maria Gabriela", time: "15:30", status: "Pendente" },
++  { id: 3, student: "Carlos Eduardo", time: "18:00", status: "Confirmado" },
++];
++
++const ProfessionalAgenda: React.FC<ProfessionalAgendaProps> = ({ user, onJoinVideoCall, onBack }) => {
++  const roomName = `FitLife-Consulta-${user.name.replace(/\s+/g, '-')}`;
++
++  return (
++    <div className="min-h-screen pb-32 bg-background-light dark:bg-background-dark">
++      {/* Header */}
++      <header className="sticky top-0 z-30 bg-maroon text-white px-6 pt-12 pb-6 rounded-b-[2.5rem] shadow-lg flex items-center gap-4">
++        {onBack && (
++          <button onClick={onBack} className="p-2 -ml-2 hover:bg-white/10 rounded-full transition-colors active:scale-95">
++            <span className="material-symbols-rounded">arrow_back</span>
++          </button>
++        )}
++        <h1 className="text-2xl font-extrabold tracking-tight">Painel do Personal</h1>
++      </header>
++
++      <main className="px-5 py-6 space-y-6">
++        {/* Virtual Office Area */}
++        <section className="bg-primary text-white p-6 rounded-[2rem] shadow-xl relative overflow-hidden">
++          <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
++          
++          <div className="flex items-center gap-3 mb-4">
++            <span className="material-symbols-rounded text-3xl text-tan">video_camera_front</span>
++            <h2 className="text-xl font-bold">Consult├│rio Virtual</h2>
++          </div>
++          
++          <p className="text-sm text-white/80 mb-6 font-medium leading-relaxed">
++            Esta ├® a sua sala fixa de atendimentos. Acesse para realizar suas consultas em v├¡deo com seus alunos.
++          </p>
++          
++          <button
++            onClick={() => onJoinVideoCall(roomName)}
++            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-green-500/30"
++          >
++            <span className="material-symbols-rounded">meeting_room</span>
++            Abrir Minha Sala Agora
++          </button>
++        </section>
++
++        {/* Appointments */}
++        <section>
++          <div className="flex items-center justify-between mb-4">
++            <h3 className="font-bold text-primary dark:text-white text-lg">Consultas de Hoje</h3>
++            <span className="bg-maroon/10 text-maroon text-xs font-bold px-2 py-1 rounded-lg">3 Agendamentos</span>
++          </div>
++
++          <div className="space-y-3">
++            {MOCK_APPOINTMENTS.map((apt) => (
++              <div key={apt.id} className="bg-white dark:bg-white/5 p-4 rounded-2xl shadow-sm border border-black/5 dark:border-white/10 flex items-center justify-between">
++                <div className="flex items-center gap-3">
++                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary dark:text-tan font-bold">
++                    {apt.student.charAt(0)}
++                  </div>
++                  <div>
++                    <p className="font-bold text-primary dark:text-white text-md">{apt.student}</p>
++                    <p className="text-xs font-bold text-maroon mt-0.5">{apt.time}</p>
++                  </div>
++                </div>
++                <div>
++                  <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md ${apt.status === 'Confirmado' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'}`}>
++                    {apt.status}
++                  </span>
++                </div>
++              </div>
++            ))}
++          </div>
++        </section>
++      </main>
++    </div>
++  );
++};
++
++export default ProfessionalAgenda;
+diff --git a/views/UserProfile.tsx b/views/UserProfile.tsx
+index 90a9c4d..f3d99f5 100644
+--- a/views/UserProfile.tsx
++++ b/views/UserProfile.tsx
+@@ -19,9 +19,10 @@ interface UserProfileProps {
+     onAddFriend?: (userId: string) => void;
+     onAcceptFriend?: (userId: string) => void;
+     onRemoveFriend?: (userId: string) => void;
+-    friendsIds?: string[];
+     incomingRequests?: string[];
+     outgoingRequests?: string[];
++    isProfessionalMode?: boolean;
++    onToggleProfessional?: () => void;
+ }
+ 
+ const UserProfile: React.FC<UserProfileProps> = ({
+@@ -41,7 +42,9 @@ const UserProfile: React.FC<UserProfileProps> = ({
+     onRemoveFriend,
+     friendsIds,
+     incomingRequests,
+-    outgoingRequests
++    outgoingRequests,
++    isProfessionalMode,
++    onToggleProfessional
+ }) => {
+     const [isMenuOpen, setIsMenuOpen] = useState(false);
+     const [isEditingName, setIsEditingName] = useState(false);
+@@ -154,6 +157,23 @@ const UserProfile: React.FC<UserProfileProps> = ({
+                         </div>
+                     </div>
+ 
++                    {/* Professional Mode Toggle */}
++                    {user.isCurrentUser && onToggleProfessional && (
++                        <div className="mt-6 w-full max-w-[250px]">
++                            <button
++                                onClick={onToggleProfessional}
++                                className={`w-full py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${
++                                    isProfessionalMode 
++                                    ? 'bg-white text-maroon hover:bg-gray-100' 
++                                    : 'bg-maroon text-white hover:bg-red-900 border border-white/20'
++                                }`}
++                            >
++                                <span className="material-symbols-outlined text-sm">workspace_premium</span>
++                                {isProfessionalMode ? 'Desativar Modo Profissional' : 'Ativar Modo Profissional'}
++                            </button>
++                        </div>
++                    )}
++
+                     {/* Friend Action Button */}
+                     {!user.isCurrentUser && (
+                         <div className="mt-6 w-full max-w-[200px]">
+diff --git a/views/VideoCall.tsx b/views/VideoCall.tsx
+new file mode 100644
+index 0000000..ef14d80
+--- /dev/null
++++ b/views/VideoCall.tsx
+@@ -0,0 +1,46 @@
++import React from 'react';
++
++interface VideoCallProps {
++  room: string;
++  onLeave: () => void;
++}
++
++const VideoCall: React.FC<VideoCallProps> = ({ room, onLeave }) => {
++  // We use Jitsi Meet's public web service. For production, you could host your own.
++  const jitsiUrl = `https://meet.jit.si/${room}`;
++
++  return (
++    <div className="fixed inset-0 z-50 bg-black flex flex-col">
++      {/* Absolute Close button overlapping the iframe slightly if needed, but we can just use a top bar */}
++      <header className="bg-black text-white p-4 flex justify-between items-center shadow-lg relative z-10">
++        <div className="flex items-center gap-3">
++          <div className="w-10 h-10 rounded-full bg-maroon flex items-center justify-center animate-pulse shadow-[0_0_15px_rgba(151,35,57,0.8)]">
++            <span className="material-symbols-rounded">video_camera_front</span>
++          </div>
++          <div>
++            <h2 className="font-bold text-lg leading-tight">Consulta FitLife</h2>
++            <p className="text-xs text-white/60">Ambiente Seguro</p>
++          </div>
++        </div>
++        <button 
++          onClick={onLeave}
++          className="bg-white/10 hover:bg-red-500/80 active:scale-95 transition-all text-white px-4 py-2 rounded-xl font-bold text-sm shadow-md"
++        >
++          Sair da Sala
++        </button>
++      </header>
++
++      {/* Jitsi iframe */}
++      <div className="flex-1 w-full h-full bg-[#1e1e1e]">
++        <iframe
++          src={jitsiUrl}
++          allow="camera; microphone; fullscreen; display-capture; autoplay"
++          className="w-full h-full border-0"
++          title="Jitsi Video Call"
++        />
++      </div>
++    </div>
++  );
++};
++
++export default VideoCall;
+
+commit 1f8d193facafff17619c57432fe35b7c22755623
+Author: carolinasalustiano <carolsalustiano.cs@gmail.com>
+Date:   Wed Mar 18 18:02:44 2026 -0300
+
+    feat: add Agenda page to display and allow scheduling with trainers.
+
+diff --git a/views/Agenda.tsx b/views/Agenda.tsx
+index b5e57e2..c2b06e9 100644
+--- a/views/Agenda.tsx
++++ b/views/Agenda.tsx
+@@ -16,11 +16,11 @@ const TRAINERS = [
+   },
+   {
+     id: 2,
+-    name: "Rafael Cardoso",
++    name: "Gabriel Cardoso",
+     specialty: "Crossfit & LPO",
+     price: "R$ 180/sess├úo",
+-    image: "https://i.pravatar.cc/150?u=rafael",
+-    link: "https://calendly.com/carolsalustiano-prod/30min" // fallback
++    image: "https://i.pravatar.cc/150?u=gabriel",
++    link: "https://calendar.app.google/CboHTAmBRfDjpaSD6"
+   },
+   {
+     id: 3,

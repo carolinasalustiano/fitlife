@@ -1,0 +1,16 @@
+﻿components/ChallengeDetailsModal.tsx
+components/Layout.tsx
+components/Navigation.tsx
+components/PWAInstallPrompt.tsx
+components/PostCard.tsx
+views/Agenda.tsx
+views/Auth.tsx
+views/Challenges.tsx
+views/Dashboard.tsx
+views/Feed.tsx
+views/Friends.tsx
+views/LogWorkout.tsx
+views/ProfessionalAgenda.tsx
+views/Ranking.tsx
+views/UserProfile.tsx
+views/VideoCall.tsx
